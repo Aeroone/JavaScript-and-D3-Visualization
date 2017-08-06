@@ -17,7 +17,7 @@ graph sample:
 
 (4) Visualization of statistics of refugees number in Europe.
 Barchart sample:
-![image]( )
+![image](https://github.com/Aeroone/JavaScript-and-D3-Visualization/blob/master/visualization%20for%20refugees%20number/bars.png)
 
 (5) Visualization of trend of refugees number in Europe.
-![image](      )
+![image](https://github.com/Aeroone/JavaScript-and-D3-Visualization/blob/master/visualization%20for%20trend%20of%20refugees%20number/trend.png)
