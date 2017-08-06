@@ -2,7 +2,7 @@
 
 Some examples of D3 visualization. Please set up HTTP server to properly run these D3 visualizations. 
 
-(1) Interactive graph visualization of player's history from Arsenal FC. This is a dynamic and iteractive visualization. 
+(1) Interactive graph visualization of player's history from Arsenal FC. This is a dynamic and interactive visualization. 
 Interactive graph sample: (with pinning nodes, mouseover event, etc.)
 graph glimpse:
 ![image](https://github.com/Aeroone/JavaScript-and-D3-Visualization/blob/master/interactive%20graph%20visualization%20for%20players'%20history%20in%20Arsenal/linear_nodes.jpg)
