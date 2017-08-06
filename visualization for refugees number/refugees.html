@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.bar {
+  fill: steelblue;
+}
+
+</style>
+<body>
+
+<div align=middle>
+<label style="color:black; font-size:15pt" for="opts">Year: </label>
+<select id = "opts">
+<option value="2005">2005</option>
+<option value="2006">2006</option> 
+<option value="2007">2007</option>
+<option value="2008">2008</option>
+<option value="2009">2009</option> 
+<option value="2010">2010</option>
+<option value="2011">2011</option>
+<option value="2012">2012</option> 
+<option value="2013">2013</option>
+<option value="2014">2014</option>
+</select>
+</div>
+
+<script src="../lib/d3/d3.v3.min.js"></script>
+<script>
+
+// generate initial legend
+Denote_Year(2005);
+
+// handle on click event
+d3.select('#opts')
+	.on('change', function() {var Year = eval(d3.select(this).property('value'));Denote_Year(Year); });  
+
+function Denote_Year(Year) 
+{
+   
+   d3.select("svg").remove();
+   d3.select("svg").remove();
+   
+	Need_Year = Year;
+
+	console.log(Need_Year);	
+		
+	var margin = {top: 50, right: 100, bottom: 50, left: 240},
+    width = 1200 - margin.left - margin.right,
+    height = 300 - margin.top - margin.bottom;
+	
+	
+	var x = d3.scale.linear()
+			.range([0, width]);
+	
+	var y0 = d3.scale.ordinal()
+		.rangeRoundBands([height, 0], .5);
+	
+	var y1 = d3.scale.ordinal();
+	
+	var color = d3.scale.category20();
+	
+	var svg = d3.select("body").append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+		
+	d3.json("poc.json", function(error, Data) 
+	{
+		if(error){console.log(error);}	
+		
+		//console.log(Data);
+		
+		var Obtain_Data_1 = d3.nest()
+			.key(function(d) { return d.Year; })
+			.sortKeys(d3.ascending)
+			.entries(Data);
+			
+		var Obtain_Data_1 = Obtain_Data_1.filter(This_Year);
+		
+		function This_Year(obj)
+		{
+			if (obj.key==Need_Year)
+			{
+				return obj.values;			
+			}
+		}
+
+		Obtain_Data_1=Obtain_Data_1[0].values;
+		
+		var Ori_Country=["Afghanistan","Eritrea","Gambia","Iran (Islamic Rep. of)",
+		"Iraq","Mali","Russian Federation","Somalia","Serbia and Kosovo (S/RES/1244 (1999))",
+		"Syrian Arab Rep."];
+		
+		var Tar_Country=["Germany","France","Finland","Sweden","Denmark"];
+		//b=Ori_Country.length;
+	
+		var Obtain_Data_1 = d3.nest()
+				.key(function(d) { return d.Origin; })
+				.entries(Obtain_Data_1);
+		
+		//console.log(Obtain_Data_1);
+		
+		Chart_1_Data=[{},{},{},{},{},{},{},{},{},{}];
+				
+		for (var i=0;i<Ori_Country.length;i++)
+		{
+			var Ori_Country_Temp_Data = Obtain_Data_1.filter(This_Ori_Country);
+		
+			function This_Ori_Country(obj)
+			{
+				if (obj.key==Ori_Country[i])    //obj.key==Need_Year
+				{
+					return obj.values;			
+				}
+			}
+			
+			//console.log(Ori_Country_Temp_Data);
+			Ori_Country_Temp_Data = Ori_Country_Temp_Data[0].values;
+		
+			
+			//------------------Obtain the Chart_1 Data-------------------
+			Count_Refugees=0;
+			for (var j=0;j<Ori_Country_Temp_Data.length;j++)
+			{
+				Count_Refugees = Count_Refugees + +Ori_Country_Temp_Data[j].Refugees;
+			}			
+						
+			Temp_Tuple={"Origin":Ori_Country[i],"Count":Count_Refugees};
+				
+			//console.log(Temp_Tuple);
+			Chart_1_Data[i] = Temp_Tuple;     
+			//-----------------------------------------------------------
+				
+		}
+		
+		//console.log(Chart_1_Data);
+		//console.log(Chart_2_Data);
+			
+//*****************************************************************************************************		
+		//var countryNames = d3.keys(Chart_1_Data[0]).filter(function(key) { return key !== "Origin"; });
+
+		y0.domain(Chart_1_Data.map(function(d) { return d.Origin; }));
+		x.domain([0, d3.max(Chart_1_Data, function(d) { return d.Count; })]);
+		
+		var xAxis = d3.svg.axis()
+			.scale(x)          
+			.orient("bottom");
+			//.tickFormat(d3.format(".2s"));    
+			
+		svg.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + height + ")")
+			.call(xAxis)
+			.append("text")
+			.attr("x", width+70)
+			.attr("y", -2)
+			.style("text-anchor", "end")      //.attr("x", width)
+			.text("#Refugees");
+
+		var yAxis = d3.svg.axis()
+			.scale(y0)
+			.orient("left");
+			
+		svg.append("g")
+			.attr("class", "y axis")
+			.call(yAxis)
+			.append("text")
+			//.attr("transform", "rotate(-90)")
+			.attr("x",-20)
+			.attr("y", -20)
+			.attr("dy", ".71em")
+			.style("text-anchor", "end")
+			.text("#Country");
+			
+		svg.selectAll(".bar")
+			.data(Chart_1_Data)
+			.enter()
+			.append("rect")
+			.attr("class", "bar")    //  
+						
+			//.attr("transform", function(d) { return "translate(0,"+y0(d.Origin)+")"; })
+			.attr("x", 0)
+			.attr("y", function(d) { return y0(d.Origin); })
+			.attr("width", function(d){return x(d.Count);})
+			.attr("height", y0.rangeBand());
+				
+//*****************************************************************************************************
+			
+	});
+	
+		
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	//=========================================================================
+	//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	var margin = {top: 50, right: 100, bottom: 50, left: 240},
+    width = 1200 - margin.left - margin.right,
+    height_2 = 700 - margin.top - margin.bottom;
+	
+	
+	var x = d3.scale.linear()
+			.range([0, width]);
+	
+	var y0_2 = d3.scale.ordinal()
+		.rangeRoundBands([height_2, 0], .1);
+	
+	var y1_2 = d3.scale.ordinal();
+	
+	
+	var svg_2 = d3.select("body").append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height_2 + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+		
+	d3.json("poc.json", function(error, Data) 
+	{
+		if(error){console.log(error);}	
+		
+		//console.log(Data);
+		
+		var Obtain_Data_1 = d3.nest()
+			.key(function(d) { return d.Year; })
+			.sortKeys(d3.ascending)
+			.entries(Data);
+			
+		var Obtain_Data_1 = Obtain_Data_1.filter(This_Year);
+		
+		function This_Year(obj)
+		{
+			if (obj.key==Need_Year)
+			{
+				return obj.values;			
+			}
+		}
+
+		Obtain_Data_1=Obtain_Data_1[0].values;
+		
+		var Ori_Country=["Afghanistan","Eritrea","Gambia","Iran (Islamic Rep. of)",
+		"Iraq","Mali","Russian Federation","Somalia","Serbia and Kosovo (S/RES/1244 (1999))",
+		"Syrian Arab Rep."];
+		
+		var Tar_Country=["Germany","France","Finland","Sweden","Denmark"];
+		//b=Ori_Country.length;
+	
+		var Obtain_Data_1 = d3.nest()
+				.key(function(d) { return d.Origin; })
+				.entries(Obtain_Data_1);
+		
+		//console.log(Obtain_Data_1);
+		
+		Chart_2_Data=[{},{},{},{},{},{},{},{},{},{}];
+		
+		for (var i=0;i<Ori_Country.length;i++)
+		{
+			var Ori_Country_Temp_Data = Obtain_Data_1.filter(This_Ori_Country);
+		
+			function This_Ori_Country(obj)
+			{
+				if (obj.key==Ori_Country[i])    //obj.key==Need_Year
+				{
+					return obj.values;			
+				}
+			}
+			
+			//console.log(Ori_Country_Temp_Data);
+			Ori_Country_Temp_Data = Ori_Country_Temp_Data[0].values;
+		
+			
+			//------------------Obtain the Chart_2 Data-------------------
+			Ori_tar_Temp_List=[0,0,0,0,0];
+			for (var k=0;k<Tar_Country.length;k++)
+			{
+				Ori_Country_Temp_Data.filter(This_Ori_Tar);
+					
+				function This_Ori_Tar(obj)
+				{
+					if (obj.Country==Tar_Country[k])    //obj.key==Need_Year
+					{
+						Ori_tar_Temp_List[k] = +obj.Refugees;
+						return;			
+					}
+				}
+			}
+			
+			//-----------------------------------------------------------
+									
+			Temp_Tuple = {"Origin":Ori_Country[i],"Germany":Ori_tar_Temp_List[0],
+						"France":Ori_tar_Temp_List[1],"Finland":Ori_tar_Temp_List[2],
+						"Sweden":Ori_tar_Temp_List[3],"Denmark":Ori_tar_Temp_List[4]};
+			
+			//"Germany","France","United Kindom","Sweden","Denmark"
+			Chart_2_Data[i] = Temp_Tuple; 
+		}
+		
+		//console.log(Chart_1_Data);
+		//console.log(Chart_2_Data);
+		
+//*****************************************************************************************************		
+		var countryNames = d3.keys(Chart_2_Data[0]).filter(function(key) { return key !== "Origin"; });
+
+		Chart_2_Data.forEach(function(d) 
+		{
+		  d.numbers = countryNames.map(function(name) { return {name: name, refugees: +d[name]}; });
+		});
+		
+		y0_2.domain(Chart_2_Data.map(function(d) { return d.Origin; }));
+		y1_2.domain(countryNames).rangeRoundBands([0, y0_2.rangeBand()]);
+		x.domain([0, d3.max(Chart_2_Data, function(d) { return d3.max(d.numbers, function(d) { return d.refugees; }); })]);
+		
+		var xAxis = d3.svg.axis()
+			.scale(x)
+			.orient("bottom");
+			//.tickFormat(d3.format(".2s"));
+			
+		svg_2.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + height_2 + ")")
+			.call(xAxis)
+			.append("text")
+			.attr("x", width+70)
+			.attr("y", -2)
+			.style("text-anchor", "end")      //.attr("x", width)
+			.text("#Refugees");
+
+				
+		var yAxis = d3.svg.axis()
+			.scale(y0_2)
+			.orient("left");
+			
+		svg_2.append("g")
+			.attr("class", "y axis")
+			.call(yAxis)
+			.append("text")
+			//.attr("transform", "rotate(-90)")
+			.attr("x",-20)
+			.attr("y", -20)
+			.attr("dy", ".71em")
+			.style("text-anchor", "end")
+			.text("#Country");
+			
+		var Original_Country = svg_2.selectAll(".Origin")
+				.data(Chart_2_Data)
+				.enter()
+				.append("g")
+				.attr("class", "g")
+				.attr("transform", function(d) { return "translate(0,"+y0_2(d.Origin)+")"; });
+				
+		Original_Country.selectAll("rect")
+			.data(function(d) { return d.numbers; })
+			.enter()
+			.append("rect")
+			.attr("width", function(d) { return x(d.refugees); })
+			.attr("height", y1_2.rangeBand() )
+			.attr("x", 0)
+			.attr("y", function(d) { return y1_2(d.name); })
+			.style("fill", function(d) { return color(d.name); });	
+
+		var legend = svg_2.selectAll(".legend")   //svg
+			.data(countryNames)//.slice())//.reverse())
+			.enter()
+			.append("g")
+			.attr("class", "legend")
+			.attr("transform", function(d, i) { return "translate(110," + i * 20 + ")"; });
+		
+		legend.append("rect")
+			.attr("x", width - 75)
+			.attr("width", 18)
+			.attr("height", 18)
+			.style("fill", color);
+
+		legend.append("text")
+			.attr("x",width - 10)
+			.attr("y", 9)
+			.attr("dy", ".35em")
+			.style("text-anchor", "end")
+			.text(function(d) { return d; });
+
+//*****************************************************************************************************
+	});
+}	
+</script>

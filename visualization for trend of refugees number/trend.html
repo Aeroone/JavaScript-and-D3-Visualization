@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+</style>
+<body>
+
+
+<script src="../lib/d3/d3.v3.min.js"></script>
+<script>
+
+  
+	var margin = {top: 50, right: 250, bottom: 50, left: 240},
+    width = 1300 - margin.left - margin.right,
+    height = 600 - margin.top - margin.bottom;
+	
+	
+	var x = d3.scale.linear()
+			.range([0, width]);
+			
+	var y = d3.scale.linear()
+			.range([height, 0]);
+	
+	var color = d3.scale.category10();
+	
+	
+	var line = d3.svg.line()
+		.interpolate("basis")
+		.x(function(d) { return x(d.date); })
+		.y(function(d) { return y(d.value); });	
+	
+	
+	var svg = d3.select("body").append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	d3.json("poc.json", function(error, Data) 
+	{
+		if (error) throw error;
+				
+		
+		//---------------------------------Process Data-------------------------------
+		var Chart_Year=["2005","2006","2007","2008","2009","2010","2011","2012","2013","2014"];
+		var Ori_Country=["Afghanistan","Iran (Islamic Rep. of)","Iraq","Somalia","Syrian Arab Rep."
+		     ,"Russian Federation","Eritrea","Gambia","Mali","Serbia and Kosovo (S/RES/1244 (1999))"];
+
+		//Process the data and obtain the new dictionary
+		var Refugees_Country_Array=new Array(10);
+		
+		for (var z=0;z<Chart_Year.length;z++)
+		{
+			Need_Year=Chart_Year[z];
+			
+			//console.log(Need_Year);
+			
+			var Obtain_Data_1 = d3.nest()
+				.key(function(d) { return d.Year; })
+				.sortKeys(d3.ascending)
+				.entries(Data);
+			
+			var Obtain_Data_1 = Obtain_Data_1.filter(This_Year);
+		
+			function This_Year(obj)
+			{
+				if (obj.key==Need_Year)
+				{
+					return obj.values;			
+				}
+			}
+			
+			Obtain_Data_1=Obtain_Data_1[0].values;
+			
+			var Obtain_Data_1 = d3.nest()
+				.key(function(d) { return d.Origin; })
+				.entries(Obtain_Data_1);
+			
+			var Temp_Tuple=new Array(Ori_Country.length);
+			for (var i=0;i<Ori_Country.length;i++)
+			{
+				var Ori_Country_Temp_Data = Obtain_Data_1.filter(This_Ori_Country);
+			
+				function This_Ori_Country(obj)
+				{
+					if (obj.key==Ori_Country[i])    //obj.key==Need_Year
+					{
+						return obj.values;			
+					}
+				}
+				
+				//console.log(Ori_Country_Temp_Data);
+				Ori_Country_Temp_Data = Ori_Country_Temp_Data[0].values;
+		
+				
+				Count_Refugees=0;
+				for (var j=0;j<Ori_Country_Temp_Data.length;j++)
+				{
+					Count_Refugees = Count_Refugees + +Ori_Country_Temp_Data[j].Refugees;
+				}			
+							
+				Temp_Tuple[i]=Count_Refugees;
+			}
+				
+			Refugees_Country_Array[z]={
+				"Chart_Year":Chart_Year[z],
+				"Afghanistan":Temp_Tuple[0],
+				"Iran (Islamic Rep. of)":Temp_Tuple[1],
+				"Iraq":Temp_Tuple[2],
+				"Somalia":Temp_Tuple[3],
+				"Syrian Arab Rep.":Temp_Tuple[4],
+				"Russian Federation":Temp_Tuple[5],
+				"Eritrea":Temp_Tuple[6],
+				"Gambia":Temp_Tuple[7],
+				"Mali":Temp_Tuple[8],
+				"Serbia and Kosovo (S/RES/1244 (1999))":Temp_Tuple[9]
+			}        
+		}
+		
+		//console.log(Refugees_Country_Array);
+		
+		color.domain(d3.keys(Refugees_Country_Array[0]).filter(function(key) { return key !== "Chart_Year"; }));
+		
+		console.log(d3.keys(Refugees_Country_Array[0]).filter(function(key) { return key !== "Chart_Year"; }));
+		
+		var Ref_Value = color.domain().map(function(name) {
+			return {
+				city: name,
+				values: Refugees_Country_Array.map(function(d) {
+				return {date: d.Chart_Year, value: d[name]};})
+				};
+		});
+		
+				
+		x.domain(d3.extent(Refugees_Country_Array, function(d){ return d.Chart_Year; }));
+		
+		y.domain([
+			d3.min(Ref_Value, function(c) { return d3.min(c.values, function(v) { return v.value; }); }),
+			d3.max(Ref_Value, function(c) { return d3.max(c.values, function(v) { return v.value; }); })
+		]);
+				
+		var xAxis = d3.svg.axis()
+			.tickFormat(d3.format(""))
+			.scale(x)
+			.orient("bottom");
+
+		svg.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + height + ")")
+			.call(xAxis);
+
+		var yAxis = d3.svg.axis()
+			.scale(y)
+			.orient("left");
+		
+		svg.append("g")
+			.attr("class", "y axis")
+			.call(yAxis)
+			.append("text")
+			//.attr("transform", "rotate(-90)")
+			.attr("y", -30)
+			.attr("dy", ".71em")
+			.style("text-anchor", "end")
+			.text("Refugees_Number");
+			
+		var Ori_Country = svg.selectAll(".Ori_Country")
+			.data(Ref_Value)
+			.enter()
+			.append("g")
+			.attr("class", "Ori_Country");
+			
+		Ori_Country.append("path")
+			.attr("class", "line")
+			.attr("d", function(d) { return line(d.values); })
+			.style("stroke", function(d) 
+			{return color(d.city); });
+			
+		Ori_Country.append("text")
+			.datum(function(d) { return {name: d.city, value: d.values[d.values.length - 1]}; })
+			.attr("transform", function(d) { return "translate(" + x(d.value.date) + "," + y(d.value.value) + ")"; })
+			.attr("x", 3)
+			.attr("dy", ".35em")
+			.text(function(d) { return d.name; });//date: d.Chart_Year, value:
+
+	//*****************************************************************************************************
+	});
+
+</script>
